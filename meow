@@ -1,0 +1,106 @@
+#!/usr/local/bin/lua
+
+Enum = {}
+
+function Enum.display(enum)
+  print '{'
+
+  for key, value in pairs(enum) do
+    print("\t"..key..": "..value)
+  end
+
+  print '}'
+end
+
+function Enum.each(enum, fn)
+  local index = 1
+
+  for value in enum do
+    fn(value, index)
+    index = index + 1
+  end
+end
+
+function Enum.invert(enum)
+  local inverted = {}
+
+  for key, value in pairs(enum) do
+    inverted[value] = key
+  end
+
+  return inverted
+end
+
+function Enum.last(enum)
+  local l = nil
+
+  for value in enum do
+    l = value
+  end
+
+  return l
+end
+
+CLI = {}
+
+function CLI:new(program_name)
+  setmetatable({}, self)
+
+  self.program_name = program_name
+
+  return self
+end
+
+function CLI:show_usage()
+  print("Usage: "..self.program_name.." [-n | --numbered] [-E | --show-ends] [-T | --show-tabs] path")
+end
+
+function CLI.simple_print(line)
+  print(line)
+end
+
+function CLI.numbered_print(line, index)
+  print(index..'\t'..line)
+end
+
+function CLI.show_ends_print(line)
+  print(line..'$')
+end
+
+function CLI.show_tabs_print(line)
+  local replaced = string.gsub(line, '\t', '^I')
+  print(replaced)
+end
+
+function CLI:display(path, options)
+  if options.numbered then
+    strategy = CLI.numbered_print
+  elseif options.show_ends then
+    strategy = CLI.show_ends_print
+  elseif options.show_tabs then
+    strategy = CLI.show_tabs_print
+  else
+    strategy = CLI.simple_print
+  end
+
+  Enum.each(io.lines(path), strategy)
+end
+
+function CLI:run(arg)
+  local path = 'meow' -- Enum.last(arg)
+  local options = Enum.invert(arg)
+
+  local display_options = {
+    numbered  = options['-n'] or options['--numbered'],
+    show_ends = options['-E'] or options['--show-ends'],
+    show_tabs = options['-T'] or options['--show-tabs'],
+  }
+
+  if path then
+    self:display(path, display_options)
+  else
+    self:show_usage()
+  end
+end
+
+CLI:new(arg[0]):run(arg)
